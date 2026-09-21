@@ -34,7 +34,7 @@ Terminal 1 (backend):
 ```bash
 cd backend
 venv\Scripts\activate
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Terminal 2 (frontend):
@@ -45,8 +45,8 @@ npm run dev
 ```
 
 - Frontend: http://localhost:3000
-- API: http://localhost:8000
-- Health: http://localhost:8000/health
+- API: http://127.0.0.1:8000 (frontend default; avoids Windows localhost → IPv6 mismatch)
+- Health: http://127.0.0.1:8000/health
 
 ## MVP flow
 

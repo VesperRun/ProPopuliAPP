@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Use 127.0.0.1 by default: on Windows, localhost may resolve to IPv6 (::1) while uvicorn binds IPv4.
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 export function getToken() {
   if (typeof window === "undefined") return null;
@@ -21,7 +22,14 @@ export async function api(path, options = {}) {
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  } catch {
+    throw new Error(
+      `Cannot reach API at ${API_BASE}. Start the backend: cd backend, activate venv, uvicorn app.main:app --reload`
+    );
+  }
   const text = await res.text();
   let data = null;
   if (text) {
