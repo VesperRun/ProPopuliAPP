@@ -5,7 +5,7 @@ Reddit-shaped discussion with a **Reframing Gate** on replies. Persistent public
 ## Prerequisites
 
 - Node.js 18+
-- Python 3.10+
+- Python 3.10+ (3.14 supported; pinned `pydantic` must match a wheel for your Python version)
 
 ## Setup
 
