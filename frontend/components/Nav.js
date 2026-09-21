@@ -35,9 +35,12 @@ export default function Nav() {
           </button>
         </>
       ) : (
-        <Link href="/login" style={{ marginLeft: "auto" }}>
-          Log in
-        </Link>
+        <div className="nav-auth" style={{ marginLeft: "auto" }}>
+          <Link href="/login">Log in</Link>
+          <Link href="/register" className="btn btn-nav-signup">
+            Sign up
+          </Link>
+        </div>
       )}
     </nav>
   );

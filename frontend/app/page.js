@@ -8,12 +8,17 @@ export default function Home() {
       <section className="card">
         <h1 style={{ marginTop: 0 }}>Recast before you publish</h1>
         <p style={{ color: "#444", lineHeight: 1.5 }}>
-          ProPopuli patterns Reddit — hubs, posts, threads — but replies must pass the Reframing Gate.
-          Attack ideas, not people. Say the objection as an improvement or a condition.
+          ProPopuli feels like the forum you already know — hubs, posts, threads — but replies must pass the
+          Reframing Gate. Attack ideas, not people. Say the objection as an improvement or a condition.
         </p>
-        <Link href="/hubs" className="btn" style={{ display: "inline-block", marginTop: "0.5rem" }}>
-          Browse hubs
-        </Link>
+        <div className="home-actions">
+          <Link href="/register" className="btn">
+            Create account
+          </Link>
+          <Link href="/hubs" className="btn btn-secondary">
+            Browse hubs
+          </Link>
+        </div>
       </section>
     </main>
   );

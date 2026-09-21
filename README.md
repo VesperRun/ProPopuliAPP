@@ -1,6 +1,6 @@
 # ProPopuli
 
-Reddit-shaped discussion with a **Reframing Gate** on replies. Persistent public handles (no legal names). AI is optional: classification + challenge only when `OPENAI_API_KEY` is set; otherwise heuristics run locally.
+Popular-forum layout (hubs, posts, threads) with a **Reframing Gate** on replies. Persistent public handles (no legal names). AI is optional: classification + challenge only when `OPENAI_API_KEY` is set; otherwise heuristics run locally.
 
 ## Prerequisites
 
@@ -21,7 +21,11 @@ cd ../frontend
 npm install
 ```
 
-Optional: set `OPENAI_API_KEY` in `backend/.env` for smarter Gate classification.
+Copy env templates: `backend/.env.example` → `backend/.env`; optional `frontend/.env.example` → `frontend/.env.local`.
+
+**Secrets:** `OPENAI_API_KEY` and `SECRET_KEY` live in **backend** env / host secrets only. The Next app never calls OpenAI and must not define `OPENAI_*` or `NEXT_PUBLIC_*` OpenAI vars. Without a backend key, the Gate uses local heuristics.
+
+Optional: set `OPENAI_API_KEY` in `backend/.env` (or deploy secrets) for classifier + challenge on replies.
 
 ## Run
 

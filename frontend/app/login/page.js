@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import Nav from "../../components/Nav";
+import { safeReturnPath } from "../../lib/auth";
 import { api, setToken } from "../../lib/api";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = safeReturnPath(searchParams.get("next"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -21,42 +24,52 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       setToken(data.access_token);
-      router.push("/hubs");
+      router.push(next);
     } catch (err) {
       setError(err.message);
     }
   }
 
+  const registerHref = next === "/hubs" ? "/register" : `/register?next=${encodeURIComponent(next)}`;
+
+  return (
+    <form className="card" onSubmit={onSubmit} style={{ maxWidth: 420 }}>
+      <h2 style={{ marginTop: 0 }}>Log in</h2>
+      <input
+        className="input"
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+      />
+      <input
+        className="input"
+        type="password"
+        placeholder="Password"
+        style={{ marginTop: "0.5rem" }}
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      />
+      {error && <p style={{ color: "#b00020" }}>{error}</p>}
+      <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
+        Log in
+      </button>
+      <p className="meta">
+        No account? <Link href={registerHref}>Sign up</Link>
+      </p>
+    </form>
+  );
+}
+
+export default function LoginPage() {
   return (
     <main className="container">
       <Nav />
-      <form className="card" onSubmit={onSubmit} style={{ maxWidth: 420 }}>
-        <h2 style={{ marginTop: 0 }}>Log in</h2>
-        <input
-          className="input"
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          className="input"
-          type="password"
-          placeholder="Password"
-          style={{ marginTop: "0.5rem" }}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        {error && <p style={{ color: "#b00020" }}>{error}</p>}
-        <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
-          Log in
-        </button>
-        <p className="meta">
-          No account? <Link href="/register">Register</Link>
-        </p>
-      </form>
+      <Suspense fallback={<p className="meta">Loading…</p>}>
+        <LoginForm />
+      </Suspense>
     </main>
   );
 }

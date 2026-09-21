@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import Nav from "../../components/Nav";
+import { safeReturnPath } from "../../lib/auth";
 import { api, setToken } from "../../lib/api";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = safeReturnPath(searchParams.get("next"));
   const [email, setEmail] = useState("");
   const [handle, setHandle] = useState("");
   const [password, setPassword] = useState("");
@@ -22,51 +25,74 @@ export default function RegisterPage() {
         body: JSON.stringify({ email, handle, password }),
       });
       setToken(data.access_token);
-      router.push("/hubs");
+      router.push(next);
     } catch (err) {
       setError(err.message);
     }
   }
 
+  const loginHref = next === "/hubs" ? "/login" : `/login?next=${encodeURIComponent(next)}`;
+
+  return (
+    <form className="card" onSubmit={onSubmit} style={{ maxWidth: 420 }}>
+      <h2 style={{ marginTop: 0 }}>Create account</h2>
+      <p className="meta" style={{ lineHeight: 1.5 }}>
+        Your <strong>handle</strong> is public on posts and replies. Your <strong>email</strong> stays private and
+        anchors one account — no legal name required.
+      </p>
+      <label className="meta" htmlFor="reg-email">
+        Email (private)
+      </label>
+      <input
+        id="reg-email"
+        className="input"
+        type="email"
+        placeholder="you@example.com"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+      />
+      <label className="meta" htmlFor="reg-handle" style={{ display: "block", marginTop: "0.75rem" }}>
+        Handle (public)
+      </label>
+      <input
+        id="reg-handle"
+        className="input"
+        placeholder="your_handle"
+        value={handle}
+        onChange={(e) => setHandle(e.target.value)}
+        required
+      />
+      <label className="meta" htmlFor="reg-password" style={{ display: "block", marginTop: "0.75rem" }}>
+        Password
+      </label>
+      <input
+        id="reg-password"
+        className="input"
+        type="password"
+        placeholder="8+ characters"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      />
+      {error && <p style={{ color: "#b00020" }}>{error}</p>}
+      <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
+        Sign up
+      </button>
+      <p className="meta">
+        Already have an account? <Link href={loginHref}>Log in</Link>
+      </p>
+    </form>
+  );
+}
+
+export default function RegisterPage() {
   return (
     <main className="container">
       <Nav />
-      <form className="card" onSubmit={onSubmit} style={{ maxWidth: 420 }}>
-        <h2 style={{ marginTop: 0 }}>Register</h2>
-        <p className="meta">Public handle only — no legal names.</p>
-        <input
-          className="input"
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          className="input"
-          placeholder="Handle"
-          style={{ marginTop: "0.5rem" }}
-          value={handle}
-          onChange={(e) => setHandle(e.target.value)}
-          required
-        />
-        <input
-          className="input"
-          type="password"
-          placeholder="Password (8+ chars)"
-          style={{ marginTop: "0.5rem" }}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        {error && <p style={{ color: "#b00020" }}>{error}</p>}
-        <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
-          Create account
-        </button>
-        <p className="meta">
-          Already registered? <Link href="/login">Log in</Link>
-        </p>
-      </form>
+      <Suspense fallback={<p className="meta">Loading…</p>}>
+        <RegisterForm />
+      </Suspense>
     </main>
   );
 }

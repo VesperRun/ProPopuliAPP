@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import AuthWall from "../../../components/AuthWall";
 import Nav from "../../../components/Nav";
+import { authHref } from "../../../lib/auth";
 import { api, getToken } from "../../../lib/api";
 
 export default function HubPage() {
@@ -13,19 +15,21 @@ export default function HubPage() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
+  const [authed, setAuthed] = useState(false);
 
   const load = () => {
     api(`/hubs/${slug}/posts`).then(setPosts).catch((e) => setError(e.message));
   };
 
   useEffect(() => {
+    setAuthed(!!getToken());
     if (slug) load();
   }, [slug]);
 
   async function submitPost(e) {
     e.preventDefault();
     if (!getToken()) {
-      router.push("/login");
+      router.push(authHref("/register", `/h/${slug}`));
       return;
     }
     setError("");
@@ -47,26 +51,33 @@ export default function HubPage() {
       <Nav />
       <h2>h/{slug}</h2>
 
-      <form className="card" onSubmit={submitPost}>
-        <h3 style={{ marginTop: 0 }}>New post</h3>
-        <input
-          className="input"
-          placeholder="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
+      {authed ? (
+        <form className="card" onSubmit={submitPost}>
+          <h3 style={{ marginTop: 0 }}>New post</h3>
+          <input
+            className="input"
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+          <textarea
+            className="textarea"
+            style={{ marginTop: "0.5rem" }}
+            placeholder="Body (optional)"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+          />
+          <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
+            Publish post
+          </button>
+        </form>
+      ) : (
+        <AuthWall
+          title="Sign up to post in this hub"
+          message="Browsing is open. Create an account to start a thread here."
         />
-        <textarea
-          className="textarea"
-          style={{ marginTop: "0.5rem" }}
-          placeholder="Body (optional)"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-        />
-        <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
-          Publish post
-        </button>
-      </form>
+      )}
 
       {error && <p style={{ color: "#b00020" }}>{error}</p>}
 

@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import AuthWall from "../../../components/AuthWall";
 import Nav from "../../../components/Nav";
+import { authHref } from "../../../lib/auth";
 import { api, getToken } from "../../../lib/api";
 
 function CommentTree({ comments, parentId = null, depth = 0 }) {
@@ -29,6 +31,7 @@ export default function PostPage() {
   const [body, setBody] = useState("");
   const [gate, setGate] = useState(null);
   const [error, setError] = useState("");
+  const [authed, setAuthed] = useState(false);
 
   const load = async () => {
     const [p, c] = await Promise.all([api(`/posts/${id}`), api(`/posts/${id}/comments`)]);
@@ -37,6 +40,7 @@ export default function PostPage() {
   };
 
   useEffect(() => {
+    setAuthed(!!getToken());
     if (id) {
       load().catch((e) => setError(e.message));
     }
@@ -47,7 +51,7 @@ export default function PostPage() {
   async function submitReply(e) {
     e.preventDefault();
     if (!getToken()) {
-      router.push("/login");
+      router.push(authHref("/register", `/p/${id}`));
       return;
     }
     setError("");
@@ -87,33 +91,40 @@ export default function PostPage() {
             </div>
           </article>
 
-          <form className="card" onSubmit={submitReply}>
-            <h3 style={{ marginTop: 0 }}>Reply (Gate enforced)</h3>
-            <textarea
-              className="textarea"
-              placeholder="State the objection as an improvement or a condition…"
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              required
+          {authed ? (
+            <form className="card" onSubmit={submitReply}>
+              <h3 style={{ marginTop: 0 }}>Reply (Gate enforced)</h3>
+              <textarea
+                className="textarea"
+                placeholder="State the objection as an improvement or a condition…"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                required
+              />
+              {gate && (
+                <div className="challenge">
+                  <strong>Reframing Gate</strong>
+                  <p style={{ margin: "0.5rem 0" }}>{gate.detail || gate.challenge}</p>
+                  {gate.challenge && gate.detail && <p style={{ margin: 0 }}>{gate.challenge}</p>}
+                  {gate.reasons?.length > 0 && (
+                    <ul style={{ marginBottom: 0 }}>
+                      {gate.reasons.map((r) => (
+                        <li key={r}>{r}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+              <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
+                Publish reply
+              </button>
+            </form>
+          ) : (
+            <AuthWall
+              title="Sign up to reply"
+              message="Read this thread freely. Replies require an account and must pass the Reframing Gate."
             />
-            {gate && (
-              <div className="challenge">
-                <strong>Reframing Gate</strong>
-                <p style={{ margin: "0.5rem 0" }}>{gate.detail || gate.challenge}</p>
-                {gate.challenge && gate.detail && <p style={{ margin: 0 }}>{gate.challenge}</p>}
-                {gate.reasons?.length > 0 && (
-                  <ul style={{ marginBottom: 0 }}>
-                    {gate.reasons.map((r) => (
-                      <li key={r}>{r}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-            <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
-              Publish reply
-            </button>
-          </form>
+          )}
 
           <h3>Thread</h3>
           <CommentTree comments={comments} />
