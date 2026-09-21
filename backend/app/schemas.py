@@ -45,6 +45,10 @@ class MessageResponse(BaseModel):
     message: str
 
 
+class ContactPublic(BaseModel):
+    admin_email: str | None = None
+
+
 class HubCreate(BaseModel):
     slug: str = Field(min_length=2, max_length=32, pattern=r"^[a-z0-9-]+$")
     name: str = Field(min_length=2, max_length=128)

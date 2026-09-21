@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     # Comma-separated handles and/or emails — full platform sovereignty (delete subpops, bar, timeout).
     operator_handles: str = ""
     operator_emails: str = ""
+    contact_admin_email: str = "ProPopuliAPP@proton.me"
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -19,6 +19,7 @@ from app.models import Comment, Hub, Post, User
 from app.schemas import (
     CommentCreate,
     CommentPublic,
+    ContactPublic,
     GateFailure,
     HubCreate,
     HubPublic,
@@ -59,6 +60,12 @@ def on_startup() -> None:
 @app.get("/health")
 def health_check():
     return {"status": "operational", "system": "ProPopuli Core Active"}
+
+
+@app.get("/public/contact", response_model=ContactPublic)
+def public_contact():
+    email = settings.contact_admin_email.strip()
+    return ContactPublic(admin_email=email or None)
 
 
 def _send_verify(user: User) -> None:

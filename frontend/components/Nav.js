@@ -26,6 +26,7 @@ export default function Nav() {
         <strong>ProPopuli</strong>
       </Link>
       <Link href="/hubs">Subpops</Link>
+      <Link href="/contact">Contact</Link>
       {isOperator && <Link href="/operator">Operator</Link>}
       {handle ? (
         <>
