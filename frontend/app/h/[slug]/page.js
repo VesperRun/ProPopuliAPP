@@ -1,0 +1,83 @@
+"use client";
+
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import Nav from "../../../components/Nav";
+import { api, getToken } from "../../../lib/api";
+
+export default function HubPage() {
+  const { slug } = useParams();
+  const router = useRouter();
+  const [posts, setPosts] = useState([]);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [error, setError] = useState("");
+
+  const load = () => {
+    api(`/hubs/${slug}/posts`).then(setPosts).catch((e) => setError(e.message));
+  };
+
+  useEffect(() => {
+    if (slug) load();
+  }, [slug]);
+
+  async function submitPost(e) {
+    e.preventDefault();
+    if (!getToken()) {
+      router.push("/login");
+      return;
+    }
+    setError("");
+    try {
+      const post = await api(`/hubs/${slug}/posts`, {
+        method: "POST",
+        body: JSON.stringify({ title, body }),
+      });
+      setTitle("");
+      setBody("");
+      router.push(`/p/${post.id}`);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <main className="container">
+      <Nav />
+      <h2>h/{slug}</h2>
+
+      <form className="card" onSubmit={submitPost}>
+        <h3 style={{ marginTop: 0 }}>New post</h3>
+        <input
+          className="input"
+          placeholder="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+        />
+        <textarea
+          className="textarea"
+          style={{ marginTop: "0.5rem" }}
+          placeholder="Body (optional)"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+        />
+        <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
+          Publish post
+        </button>
+      </form>
+
+      {error && <p style={{ color: "#b00020" }}>{error}</p>}
+
+      {posts.map((post) => (
+        <Link key={post.id} href={`/p/${post.id}`} className="card" style={{ display: "block" }}>
+          <strong>{post.title}</strong>
+          <div className="meta">
+            @{post.author_handle} · {post.comment_count} replies · {new Date(post.created_at).toLocaleString()}
+          </div>
+        </Link>
+      ))}
+    </main>
+  );
+}
