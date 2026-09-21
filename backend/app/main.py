@@ -4,6 +4,12 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth import create_access_token, get_current_user, hash_password, verify_password
+from app.auth_deps import require_verified_user
+from app.config import settings
+from app.email_util import normalize_email
+from app.mailer import send_verification_email
+from app.migrate import run_migrations
+from app.verification import issue_verification_token, verify_token
 from app.database import Base, engine, get_db
 from app.gate import evaluate_reply
 from app.models import Comment, Hub, Post, User
@@ -16,15 +22,15 @@ from app.schemas import (
     LoginRequest,
     PostCreate,
     PostPublic,
+    MessageResponse,
     RegisterRequest,
     TokenResponse,
     UserPublic,
+    VerifyEmailRequest,
 )
 from app.seed import seed_hubs
 
 app = FastAPI(title="ProPopuli API", version="1.0.0")
-
-from app.config import settings
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,6 +44,7 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
+    run_migrations()
     db = next(get_db())
     try:
         seed_hubs(db)
@@ -50,23 +57,55 @@ def health_check():
     return {"status": "operational", "system": "ProPopuli Core Active"}
 
 
+def _send_verify(user: User) -> None:
+    token = issue_verification_token(user)
+    verify_url = f"{settings.app_public_url.rstrip('/')}/verify-email?token={token}"
+    send_verification_email(user.email, verify_url)
+
+
 @app.post("/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
-    if db.query(User).filter((User.email == payload.email) | (User.handle == payload.handle)).first():
+    email = normalize_email(str(payload.email))
+    if db.query(User).filter((User.email == email) | (User.handle == payload.handle)).first():
         raise HTTPException(status_code=400, detail="Email or handle already in use")
-    user = User(email=payload.email, handle=payload.handle, password_hash=hash_password(payload.password))
+    user = User(
+        email=email,
+        handle=payload.handle,
+        password_hash=hash_password(payload.password),
+        email_verified=False,
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
+    _send_verify(user)
+    db.commit()
     return TokenResponse(access_token=create_access_token(user.id))
 
 
 @app.post("/auth/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == payload.email).first()
+    email = normalize_email(str(payload.email))
+    user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return TokenResponse(access_token=create_access_token(user.id))
+
+
+@app.post("/auth/verify-email", response_model=MessageResponse)
+def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)):
+    user = verify_token(db, payload.token.strip())
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification link")
+    return MessageResponse(message="Email verified. You can post and reply.")
+
+
+@app.post("/auth/resend-verification", response_model=MessageResponse)
+def resend_verification(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if user.email_verified:
+        return MessageResponse(message="Email already verified.")
+    _send_verify(user)
+    db.commit()
+    return MessageResponse(message="Verification email sent.")
 
 
 @app.get("/me", response_model=UserPublic)
@@ -80,7 +119,7 @@ def list_hubs(db: Session = Depends(get_db)):
 
 
 @app.post("/hubs", response_model=HubPublic, status_code=status.HTTP_201_CREATED)
-def create_hub(payload: HubCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def create_hub(payload: HubCreate, db: Session = Depends(get_db), user: User = Depends(require_verified_user)):
     if db.query(Hub).filter(Hub.slug == payload.slug).first():
         raise HTTPException(status_code=400, detail="Hub slug already exists")
     hub = Hub(slug=payload.slug, name=payload.name, description=payload.description)
@@ -123,7 +162,7 @@ def create_post(
     slug: str,
     payload: PostCreate,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_verified_user),
 ):
     hub = db.query(Hub).filter(Hub.slug == slug).first()
     if not hub:
@@ -197,7 +236,7 @@ async def create_comment(
     post_id: int,
     payload: CommentCreate,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_verified_user),
 ):
     post = db.get(Post, post_id)
     if not post:

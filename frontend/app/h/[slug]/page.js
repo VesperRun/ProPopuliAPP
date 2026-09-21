@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AuthWall from "../../../components/AuthWall";
 import Nav from "../../../components/Nav";
+import VerifyBanner from "../../../components/VerifyBanner";
 import { authHref } from "../../../lib/auth";
 import { api, getToken } from "../../../lib/api";
 
@@ -16,13 +17,20 @@ export default function HubPage() {
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
   const [authed, setAuthed] = useState(false);
+  const [verified, setVerified] = useState(true);
 
   const load = () => {
     api(`/hubs/${slug}/posts`).then(setPosts).catch((e) => setError(e.message));
   };
 
   useEffect(() => {
-    setAuthed(!!getToken());
+    const tok = getToken();
+    setAuthed(!!tok);
+    if (tok) {
+      api("/me")
+        .then((u) => setVerified(u.email_verified))
+        .catch(() => setVerified(true));
+    }
     if (slug) load();
   }, [slug]);
 
@@ -51,7 +59,9 @@ export default function HubPage() {
       <Nav />
       <h2>h/{slug}</h2>
 
-      {authed ? (
+      {authed && <VerifyBanner verified={verified} />}
+
+      {authed && verified ? (
         <form className="card" onSubmit={submitPost}>
           <h3 style={{ marginTop: 0 }}>New post</h3>
           <input
@@ -72,12 +82,12 @@ export default function HubPage() {
             Publish post
           </button>
         </form>
-      ) : (
+      ) : !authed ? (
         <AuthWall
           title="Sign up to post in this hub"
           message="Browsing is open. Create an account to start a thread here."
         />
-      )}
+      ) : null}
 
       {error && <p style={{ color: "#b00020" }}>{error}</p>}
 

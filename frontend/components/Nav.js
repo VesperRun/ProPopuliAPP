@@ -6,11 +6,15 @@ import { api, clearToken, getToken } from "../lib/api";
 
 export default function Nav() {
   const [handle, setHandle] = useState(null);
+  const [verified, setVerified] = useState(true);
 
   useEffect(() => {
     if (!getToken()) return;
     api("/me")
-      .then((u) => setHandle(u.handle))
+      .then((u) => {
+        setHandle(u.handle);
+        setVerified(u.email_verified);
+      })
       .catch(() => clearToken());
   }, []);
 
@@ -22,7 +26,10 @@ export default function Nav() {
       <Link href="/hubs">Hubs</Link>
       {handle ? (
         <>
-          <span className="meta">@{handle}</span>
+          <span className="meta">
+            @{handle}
+            {!verified && " · unverified"}
+          </span>
           <button
             className="btn"
             style={{ marginLeft: "auto", background: "#444" }}

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import AuthWall from "../../../components/AuthWall";
 import Nav from "../../../components/Nav";
+import VerifyBanner from "../../../components/VerifyBanner";
 import { authHref } from "../../../lib/auth";
 import { api, getToken } from "../../../lib/api";
 
@@ -32,6 +33,7 @@ export default function PostPage() {
   const [gate, setGate] = useState(null);
   const [error, setError] = useState("");
   const [authed, setAuthed] = useState(false);
+  const [verified, setVerified] = useState(true);
 
   const load = async () => {
     const [p, c] = await Promise.all([api(`/posts/${id}`), api(`/posts/${id}/comments`)]);
@@ -40,7 +42,13 @@ export default function PostPage() {
   };
 
   useEffect(() => {
-    setAuthed(!!getToken());
+    const tok = getToken();
+    setAuthed(!!tok);
+    if (tok) {
+      api("/me")
+        .then((u) => setVerified(u.email_verified))
+        .catch(() => setVerified(true));
+    }
     if (id) {
       load().catch((e) => setError(e.message));
     }
@@ -91,7 +99,9 @@ export default function PostPage() {
             </div>
           </article>
 
-          {authed ? (
+          {authed && <VerifyBanner verified={verified} />}
+
+          {authed && verified ? (
             <form className="card" onSubmit={submitReply}>
               <h3 style={{ marginTop: 0 }}>Reply (Gate enforced)</h3>
               <textarea
@@ -119,12 +129,12 @@ export default function PostPage() {
                 Publish reply
               </button>
             </form>
-          ) : (
+          ) : !authed ? (
             <AuthWall
               title="Sign up to reply"
               message="Read this thread freely. Replies require an account and must pass the Reframing Gate."
             />
-          )}
+          ) : null}
 
           <h3>Thread</h3>
           <CommentTree comments={comments} />

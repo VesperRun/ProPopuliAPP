@@ -26,7 +26,7 @@ function RegisterForm() {
         body: JSON.stringify({ email, handle, password }),
       });
       setToken(data.access_token);
-      router.push(next);
+      router.push(next === "/hubs" ? "/verify-email" : next);
     } catch (err) {
       setError(err.message);
     }
