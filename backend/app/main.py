@@ -126,6 +126,7 @@ def _user_public(user: User) -> UserPublic:
     return UserPublic(
         id=user.id,
         handle=user.handle,
+        email=user.email,
         email_verified=user.email_verified,
         is_operator=is_operator_user(user),
         created_at=user.created_at,

@@ -23,6 +23,7 @@ class TokenResponse(BaseModel):
 class UserPublic(BaseModel):
     id: int
     handle: str
+    email: str
     email_verified: bool
     is_operator: bool = False
     created_at: datetime
