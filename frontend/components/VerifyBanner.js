@@ -25,7 +25,7 @@ export default function VerifyBanner({ verified }) {
     <div className="card" style={{ background: "#fff8e6", borderColor: "#e6d9a8" }}>
       <strong>Verify your email</strong>
       <p style={{ margin: "0.5rem 0", color: "#444" }}>
-        You can browse hubs and read threads. Posting and replies unlock after you confirm your email.
+        You can browse subpops and read threads. Posting, replies, and creating subpops unlock after you confirm your email.
       </p>
       <button type="button" className="btn btn-secondary" onClick={resend}>
         Resend verification email

@@ -7,7 +7,7 @@ import { authHref } from "../lib/auth";
 export default function AuthWall({ title = "Join to participate", message }) {
   const pathname = usePathname();
   const defaultMessage =
-    "You can read hubs and threads without an account. Sign up to post and reply (Reframing Gate applies to replies).";
+    "You can read subpops and threads without an account. Sign up to post and reply (Reframing Gate applies to replies).";
 
   return (
     <div className="card auth-wall">

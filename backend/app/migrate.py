@@ -17,12 +17,25 @@ def run_migrations() -> None:
     if "verification_expires_at" not in cols:
         alters.append("ALTER TABLE users ADD COLUMN verification_expires_at DATETIME")
 
-    if not alters:
+    hub_alters: list[str] = []
+    if "hubs" in insp.get_table_names():
+        hub_cols = {c["name"] for c in insp.get_columns("hubs")}
+        if "creator_id" not in hub_cols:
+            hub_alters.append("ALTER TABLE hubs ADD COLUMN creator_id INTEGER REFERENCES users(id)")
+
+    if "banned_permanent" not in cols:
+        alters.append("ALTER TABLE users ADD COLUMN banned_permanent BOOLEAN DEFAULT 0 NOT NULL")
+    if "timeout_until" not in cols:
+        alters.append("ALTER TABLE users ADD COLUMN timeout_until DATETIME")
+    if "moderation_note" not in cols:
+        alters.append("ALTER TABLE users ADD COLUMN moderation_note VARCHAR(512)")
+
+    if not alters and not hub_alters:
         return
 
     with engine.begin() as conn:
-        for stmt in alters:
+        for stmt in alters + hub_alters:
             conn.execute(text(stmt))
-        # Grandfather accounts created before verify-email shipped.
-        conn.execute(text("UPDATE users SET email_verified = 1 WHERE verification_token IS NULL"))
-        conn.execute(text("UPDATE users SET email = LOWER(email) WHERE email != LOWER(email)"))
+        if "email_verified" in {c["name"] for c in insp.get_columns("users")}:
+            conn.execute(text("UPDATE users SET email_verified = 1 WHERE verification_token IS NULL"))
+            conn.execute(text("UPDATE users SET email = LOWER(email) WHERE email != LOWER(email)"))

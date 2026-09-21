@@ -19,6 +19,9 @@ class User(Base):
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     verification_token: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
     verification_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    banned_permanent: Mapped[bool] = mapped_column(Boolean, default=False)
+    timeout_until: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    moderation_note: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     posts: Mapped[list["Post"]] = relationship(back_populates="author")
@@ -32,6 +35,7 @@ class Hub(Base):
     slug: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(128))
     description: Mapped[str] = mapped_column(String(512), default="")
+    creator_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
 
     posts: Mapped[list["Post"]] = relationship(back_populates="hub")
 

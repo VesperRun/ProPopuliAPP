@@ -17,9 +17,28 @@ class Settings(BaseSettings):
     resend_from_email: str | None = None
     app_public_url: str = "http://localhost:3000"
 
+    # Comma-separated handles and/or emails — full platform sovereignty (delete subpops, bar, timeout).
+    operator_handles: str = ""
+    operator_emails: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def operator_handle_set(self) -> set[str]:
+        return {h.strip() for h in self.operator_handles.split(",") if h.strip()}
+
+    @property
+    def operator_email_set(self) -> set[str]:
+        from app.email_util import normalize_email
+
+        out: set[str] = set()
+        for raw in self.operator_emails.split(","):
+            part = raw.strip()
+            if part:
+                out.add(normalize_email(part))
+        return out
 
 
 settings = Settings()

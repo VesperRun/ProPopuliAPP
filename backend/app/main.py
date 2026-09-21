@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.auth import create_access_token, get_current_user, hash_password, verify_password
 from app.auth_deps import require_verified_user
+from app.moderation import apply_moderation, delete_subpop_cascade
+from app.operator_privilege import is_operator_user, require_operator
 from app.config import settings
 from app.email_util import normalize_email
 from app.mailer import send_verification_email
@@ -23,6 +25,7 @@ from app.schemas import (
     PostCreate,
     PostPublic,
     MessageResponse,
+    ModerationRequest,
     RegisterRequest,
     TokenResponse,
     UserPublic,
@@ -88,6 +91,8 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    if user.banned_permanent:
+        raise HTTPException(status_code=403, detail="Account barred by the operator.")
     return TokenResponse(access_token=create_access_token(user.id))
 
 
@@ -108,9 +113,19 @@ def resend_verification(db: Session = Depends(get_db), user: User = Depends(get_
     return MessageResponse(message="Verification email sent.")
 
 
+def _user_public(user: User) -> UserPublic:
+    return UserPublic(
+        id=user.id,
+        handle=user.handle,
+        email_verified=user.email_verified,
+        is_operator=is_operator_user(user),
+        created_at=user.created_at,
+    )
+
+
 @app.get("/me", response_model=UserPublic)
 def me(user: User = Depends(get_current_user)):
-    return user
+    return _user_public(user)
 
 
 @app.get("/hubs", response_model=list[HubPublic])
@@ -122,7 +137,12 @@ def list_hubs(db: Session = Depends(get_db)):
 def create_hub(payload: HubCreate, db: Session = Depends(get_db), user: User = Depends(require_verified_user)):
     if db.query(Hub).filter(Hub.slug == payload.slug).first():
         raise HTTPException(status_code=400, detail="Hub slug already exists")
-    hub = Hub(slug=payload.slug, name=payload.name, description=payload.description)
+    hub = Hub(
+        slug=payload.slug,
+        name=payload.name,
+        description=payload.description,
+        creator_id=user.id,
+    )
     db.add(hub)
     db.commit()
     db.refresh(hub)
@@ -274,3 +294,41 @@ async def create_comment(
         author_handle=user.handle,
         created_at=comment.created_at,
     )
+
+
+@app.delete("/operator/subpops/{slug}", response_model=MessageResponse)
+def operator_delete_subpop(
+    slug: str,
+    db: Session = Depends(get_db),
+    _operator: User = Depends(require_operator),
+):
+    hub = db.query(Hub).filter(Hub.slug == slug).first()
+    if not hub:
+        raise HTTPException(status_code=404, detail="Subpop not found")
+    delete_subpop_cascade(db, hub)
+    db.commit()
+    return MessageResponse(message=f"Deleted subpop s\\{slug} and its threads.")
+
+
+@app.post("/operator/users/{handle}/moderate", response_model=MessageResponse)
+def operator_moderate_user(
+    handle: str,
+    payload: ModerationRequest,
+    db: Session = Depends(get_db),
+    operator: User = Depends(require_operator),
+):
+    target = db.query(User).filter(User.handle == handle).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if target.id == operator.id and payload.action in ("bar", "timeout"):
+        raise HTTPException(status_code=400, detail="You cannot bar or timeout your operator account.")
+    if is_operator_user(target) and payload.action in ("bar", "timeout"):
+        raise HTTPException(status_code=400, detail="Cannot bar or timeout another operator account.")
+    msg = apply_moderation(
+        db,
+        target,
+        action=payload.action,
+        hours=payload.hours,
+        note=payload.note.strip(),
+    )
+    return MessageResponse(message=msg)

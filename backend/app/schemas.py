@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -23,10 +24,17 @@ class UserPublic(BaseModel):
     id: int
     handle: str
     email_verified: bool
+    is_operator: bool = False
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class ModerationRequest(BaseModel):
+    action: Literal["bar", "timeout", "pardon"]
+    hours: int | None = Field(default=None, ge=1, le=8760)
+    note: str = Field(default="", max_length=512)
 
 
 class VerifyEmailRequest(BaseModel):

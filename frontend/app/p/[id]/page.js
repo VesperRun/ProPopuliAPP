@@ -8,6 +8,7 @@ import Nav from "../../../components/Nav";
 import VerifyBanner from "../../../components/VerifyBanner";
 import { authHref } from "../../../lib/auth";
 import { api, getToken } from "../../../lib/api";
+import { subpopLabel, subpopPath } from "../../../lib/subpop";
 
 function CommentTree({ comments, parentId = null, depth = 0 }) {
   const nodes = comments.filter((c) => c.parent_id === parentId);
@@ -89,7 +90,7 @@ export default function PostPage() {
       {post && (
         <>
           <div className="meta">
-            <Link href={`/h/${post.hub_slug}`}>h/{post.hub_slug}</Link>
+            <Link href={subpopPath(post.hub_slug)}>{subpopLabel(post.hub_slug)}</Link>
           </div>
           <article className="card">
             <h1 style={{ marginTop: 0 }}>{post.title}</h1>
