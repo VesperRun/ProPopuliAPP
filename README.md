@@ -1,6 +1,8 @@
 # ProPopuli
 
-Popular-forum layout (hubs, posts, threads) with a **Reframing Gate** on replies. Persistent public handles (no legal names). AI is optional: classification + challenge only when `OPENAI_API_KEY` is set; otherwise heuristics run locally.
+**License:** Proprietary. Copyright © 2026 VesperRun. All rights reserved. See [LICENSE](LICENSE).
+
+Popular-forum layout (subpops, posts, threads) with a **Reframing Gate** on replies. Persistent public handles (no legal names). AI is optional: classification + challenge only when `OPENAI_API_KEY` is set; otherwise heuristics run locally.
 
 ## Prerequisites
 
@@ -51,7 +53,7 @@ npm run dev
 ## MVP flow
 
 1. Register → pick a handle
-2. Open **h/general** or **h/build**
+2. Open **s\general** or **s\build** (`/s/general`, `/s/build`)
 3. Create a post
 4. Reply on the thread — teardown language gets **422** with a rewrite challenge; constructive replies publish
 
