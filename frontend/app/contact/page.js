@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Nav from "../../components/Nav";
 import { authHref } from "../../lib/auth";
 import { api, getToken } from "../../lib/api";
@@ -11,6 +11,8 @@ import { composeUrlForUserEmail } from "../../lib/mailCompose";
 export default function ContactPage() {
   const [adminEmail, setAdminEmail] = useState(DEFAULT_ADMIN_EMAIL);
   const [userEmail, setUserEmail] = useState(null);
+  /** pending = same on server and client until mount (avoids hydration mismatch) */
+  const [authState, setAuthState] = useState("pending");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -20,19 +22,26 @@ export default function ContactPage() {
       })
       .catch(() => {});
 
-    if (getToken()) {
-      api("/me")
-        .then((u) => setUserEmail(u.email))
-        .catch(() => setUserEmail(null));
+    const tok = getToken();
+    if (!tok) {
+      setAuthState("guest");
+      return;
     }
+    api("/me")
+      .then((u) => {
+        setUserEmail(u.email);
+        setAuthState("ready");
+      })
+      .catch(() => setAuthState("guest"));
   }, []);
 
-  const composeUrl =
-    userEmail &&
-    composeUrlForUserEmail(userEmail, {
+  const composeUrl = useMemo(() => {
+    if (!userEmail) return null;
+    return composeUrlForUserEmail(userEmail, {
       to: adminEmail,
       subject: "ProPopuli contact",
     });
+  }, [userEmail, adminEmail]);
 
   function openCompose() {
     if (!composeUrl) return;
@@ -58,18 +67,23 @@ export default function ContactPage() {
           Feedback, suggestions, abuse reports, appeals, or platform questions — reach the admin directly.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
-          {composeUrl ? (
-            <button type="button" className="btn" onClick={openCompose}>
+          {authState === "pending" && (
+            <button type="button" className="btn" disabled>
               Email admin
             </button>
-          ) : getToken() ? (
-            <p className="meta" style={{ margin: 0 }}>
-              We don&apos;t recognize your email provider for one-click compose. Use copy below.
-            </p>
-          ) : (
+          )}
+          {authState === "guest" && (
             <Link className="btn" href={authHref("/login", "/contact")}>
               Log in to email admin
             </Link>
+          )}
+          {authState === "ready" && composeUrl && (
+            <button type="button" className="btn" onClick={openCompose}>
+              Email admin
+            </button>
+          )}
+          {authState === "ready" && !composeUrl && (
+            <span className="meta">Use copy — your email provider isn&apos;t linked for one-click compose.</span>
           )}
           <button type="button" className="btn btn-secondary" onClick={copyAddress}>
             {copied ? "Copied" : "Copy address"}
@@ -78,7 +92,7 @@ export default function ContactPage() {
         <p className="meta" style={{ marginTop: "0.75rem", marginBottom: 0 }}>
           {adminEmail}
         </p>
-        {composeUrl && (
+        {authState === "ready" && composeUrl && userEmail && (
           <p className="meta" style={{ marginTop: "0.5rem", marginBottom: 0 }}>
             Opens compose in the webmail for the address you signed up with ({userEmail}).
           </p>
