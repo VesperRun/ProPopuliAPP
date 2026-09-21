@@ -1,5 +1,9 @@
-// Use 127.0.0.1 by default: on Windows, localhost may resolve to IPv6 (::1) while uvicorn binds IPv4.
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+// Browser uses /api proxy (next.config.js → backend). Override with NEXT_PUBLIC_API_URL if needed.
+function apiBase() {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== "undefined") return "/api";
+  return "http://127.0.0.1:8000";
+}
 
 export function getToken() {
   if (typeof window === "undefined") return null;
@@ -24,10 +28,10 @@ export async function api(path, options = {}) {
 
   let res;
   try {
-    res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    res = await fetch(`${apiBase()}${path}`, { ...options, headers });
   } catch {
     throw new Error(
-      `Cannot reach API at ${API_BASE}. Start the backend: cd backend, activate venv, uvicorn app.main:app --reload`
+      "Cannot reach API. Start the backend (terminal 1): cd backend → venv → uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
     );
   }
   const text = await res.text();
