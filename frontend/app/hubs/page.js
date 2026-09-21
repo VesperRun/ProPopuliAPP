@@ -7,7 +7,8 @@ import Nav from "../../components/Nav";
 import VerifyBanner from "../../components/VerifyBanner";
 import { authHref } from "../../lib/auth";
 import { api, getToken } from "../../lib/api";
-import { subpopLabel, subpopPath } from "../../lib/subpop";
+import { CONTENT_POLICY_MESSAGE, contentPolicyViolation } from "../../lib/contentPolicy";
+import { normalizeSubpopSlug, subpopLabel, subpopPath } from "../../lib/subpop";
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/;
 
@@ -46,9 +47,13 @@ export default function HubsPage() {
       router.push(authHref("/register", "/hubs"));
       return;
     }
-    const normalized = slug.trim().toLowerCase();
+    const normalized = normalizeSubpopSlug(slug);
+    if (contentPolicyViolation(normalized, name, description)) {
+      setError(CONTENT_POLICY_MESSAGE);
+      return;
+    }
     if (!SLUG_PATTERN.test(normalized)) {
-      setError("Slug: lowercase letters, numbers, and hyphens only (2–32 chars).");
+      setError("Use the name only (e.g. intro → s\\intro). Letters, numbers, hyphens, 2–32 chars.");
       return;
     }
     setCreating(true);
@@ -74,7 +79,7 @@ export default function HubsPage() {
       <Nav />
       <h2>Subpops</h2>
       <p className="meta" style={{ marginTop: "-0.5rem" }}>
-        Niche communities — symbolically <strong>s\name</strong> (like subreddits, without the trademark).
+        Niche communities — symbolically <strong>s\name</strong>.
       </p>
 
       {authed && <VerifyBanner verified={verified} />}
@@ -89,12 +94,16 @@ export default function HubsPage() {
             <form onSubmit={createSubpop}>
               <h3 style={{ marginTop: 0 }}>New subpop</h3>
               <label className="meta" htmlFor="subpop-slug">
-                Slug (shown as {slug.trim() ? subpopLabel(slug.trim().toLowerCase()) : "s\\your-name"})
+                Name slug — we add s\ (
+                {normalizeSubpopSlug(slug) && SLUG_PATTERN.test(normalizeSubpopSlug(slug))
+                  ? subpopLabel(normalizeSubpopSlug(slug))
+                  : "s\\intro"}
+                )
               </label>
               <input
                 id="subpop-slug"
                 className="input"
-                placeholder="beachhead-ideas"
+                placeholder="intro"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
                 minLength={2}

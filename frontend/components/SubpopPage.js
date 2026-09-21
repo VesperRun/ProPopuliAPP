@@ -7,6 +7,7 @@ import AuthWall from "./AuthWall";
 import Nav from "./Nav";
 import VerifyBanner from "./VerifyBanner";
 import { authHref } from "../lib/auth";
+import { CONTENT_POLICY_MESSAGE, contentPolicyViolation } from "../lib/contentPolicy";
 import { api, getToken } from "../lib/api";
 import { subpopLabel, subpopPath } from "../lib/subpop";
 
@@ -57,6 +58,10 @@ export default function SubpopPage() {
       return;
     }
     setError("");
+    if (contentPolicyViolation(title, body)) {
+      setError(CONTENT_POLICY_MESSAGE);
+      return;
+    }
     try {
       const post = await api(`/hubs/${slug}/posts`, {
         method: "POST",

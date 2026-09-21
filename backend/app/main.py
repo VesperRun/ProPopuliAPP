@@ -8,6 +8,7 @@ from app.auth_deps import require_verified_user
 from app.moderation import apply_moderation, delete_subpop_cascade
 from app.operator_privilege import is_operator_user, require_operator
 from app.config import settings
+from app.content_policy import assert_content_policy
 from app.email_util import normalize_email
 from app.mailer import send_verification_email
 from app.migrate import run_migrations
@@ -69,6 +70,7 @@ def _send_verify(user: User) -> None:
 @app.post("/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     email = normalize_email(str(payload.email))
+    assert_content_policy(payload.handle)
     if db.query(User).filter((User.email == email) | (User.handle == payload.handle)).first():
         raise HTTPException(status_code=400, detail="Email or handle already in use")
     user = User(
@@ -135,6 +137,7 @@ def list_hubs(db: Session = Depends(get_db)):
 
 @app.post("/hubs", response_model=HubPublic, status_code=status.HTTP_201_CREATED)
 def create_hub(payload: HubCreate, db: Session = Depends(get_db), user: User = Depends(require_verified_user)):
+    assert_content_policy(payload.slug, payload.name, payload.description)
     if db.query(Hub).filter(Hub.slug == payload.slug).first():
         raise HTTPException(status_code=400, detail="Hub slug already exists")
     hub = Hub(
@@ -187,6 +190,7 @@ def create_post(
     hub = db.query(Hub).filter(Hub.slug == slug).first()
     if not hub:
         raise HTTPException(status_code=404, detail="Hub not found")
+    assert_content_policy(payload.title, payload.body)
     post = Post(hub_id=hub.id, author_id=user.id, title=payload.title, body=payload.body)
     db.add(post)
     db.commit()
@@ -266,6 +270,7 @@ async def create_comment(
         if not parent or parent.post_id != post_id:
             raise HTTPException(status_code=400, detail="Invalid parent comment")
 
+    assert_content_policy(payload.body)
     gate = await evaluate_reply(payload.body, post.title, post.body)
     if not gate.passed:
         raise HTTPException(

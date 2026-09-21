@@ -7,6 +7,7 @@ import AuthWall from "../../../components/AuthWall";
 import Nav from "../../../components/Nav";
 import VerifyBanner from "../../../components/VerifyBanner";
 import { authHref } from "../../../lib/auth";
+import { CONTENT_POLICY_MESSAGE, contentPolicyViolation } from "../../../lib/contentPolicy";
 import { api, getToken } from "../../../lib/api";
 import { subpopLabel, subpopPath } from "../../../lib/subpop";
 
@@ -65,6 +66,10 @@ export default function PostPage() {
     }
     setError("");
     setGate(null);
+    if (contentPolicyViolation(body)) {
+      setError(CONTENT_POLICY_MESSAGE);
+      return;
+    }
     try {
       await api(`/posts/${id}/comments`, {
         method: "POST",
