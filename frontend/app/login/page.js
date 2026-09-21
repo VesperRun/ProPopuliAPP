@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import Nav from "../../components/Nav";
+import PasswordInput from "../../components/PasswordInput";
 import { safeReturnPath } from "../../lib/auth";
 import { api, setToken } from "../../lib/api";
 
@@ -43,14 +44,11 @@ function LoginForm() {
         onChange={(e) => setEmail(e.target.value)}
         required
       />
-      <input
-        className="input"
-        type="password"
+      <PasswordInput
+        id="login-password"
         placeholder="Password"
-        style={{ marginTop: "0.5rem" }}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        required
       />
       {error && <p style={{ color: "#b00020" }}>{error}</p>}
       <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>

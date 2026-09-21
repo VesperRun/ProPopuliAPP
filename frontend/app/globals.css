@@ -103,6 +103,33 @@ a.btn:hover {
   resize: vertical;
 }
 
+.password-field {
+  position: relative;
+  margin-top: 0.5rem;
+}
+
+.password-field-input {
+  padding-right: 4.5rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #0a58ca;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+}
+
+.password-toggle:hover {
+  text-decoration: underline;
+}
+
 .challenge {
   margin-top: 0.75rem;
   padding: 0.75rem;

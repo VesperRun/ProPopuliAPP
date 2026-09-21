@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import Nav from "../../components/Nav";
+import PasswordInput from "../../components/PasswordInput";
 import { safeReturnPath } from "../../lib/auth";
 import { api, setToken } from "../../lib/api";
 
@@ -66,14 +67,11 @@ function RegisterForm() {
       <label className="meta" htmlFor="reg-password" style={{ display: "block", marginTop: "0.75rem" }}>
         Password
       </label>
-      <input
+      <PasswordInput
         id="reg-password"
-        className="input"
-        type="password"
         placeholder="8+ characters"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        required
       />
       {error && <p style={{ color: "#b00020" }}>{error}</p>}
       <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
