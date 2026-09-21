@@ -61,3 +61,4 @@ npm run dev
 
 - `backend/` — FastAPI, SQLite, JWT auth, Gate on `POST /posts/{id}/comments`
 - `frontend/` — Next.js 14, light UI
+- `docs/hierarchy.md` — **sample ⊂ branch ⊂ fractalpop ⊂ subpop ⊂ pop**

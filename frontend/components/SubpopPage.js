@@ -14,6 +14,7 @@ import { subpopLabel, subpopPath } from "../lib/subpop";
 export default function SubpopPage() {
   const { slug } = useParams();
   const router = useRouter();
+  const [hub, setHub] = useState(null);
   const [posts, setPosts] = useState([]);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -23,7 +24,12 @@ export default function SubpopPage() {
   const [isOperator, setIsOperator] = useState(false);
 
   const load = () => {
-    api(`/hubs/${slug}/posts`).then(setPosts).catch((e) => setError(e.message));
+    Promise.all([api(`/hubs/${slug}`), api(`/hubs/${slug}/posts`)])
+      .then(([h, list]) => {
+        setHub(h);
+        setPosts(list);
+      })
+      .catch((e) => setError(e.message));
   };
 
   useEffect(() => {
@@ -78,25 +84,35 @@ export default function SubpopPage() {
   return (
     <main className="container">
       <Nav />
-      <div style={{ display: "flex", alignItems: "baseline", gap: "1rem", flexWrap: "wrap" }}>
-        <h2 style={{ marginBottom: 0 }}>{subpopLabel(slug)}</h2>
-        {isOperator && (
-          <button
-            type="button"
-            className="btn"
-            style={{ background: "#8b0000", fontSize: "0.85rem" }}
-            onClick={deleteSubpop}
-          >
-            Delete subpop (operator)
-          </button>
-        )}
-      </div>
+      <header style={{ marginBottom: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "1rem", flexWrap: "wrap" }}>
+          <h1 style={{ margin: 0 }}>{hub?.name ?? slug}</h1>
+          {isOperator && (
+            <button
+              type="button"
+              className="btn"
+              style={{ background: "#8b0000", fontSize: "0.85rem" }}
+              onClick={deleteSubpop}
+            >
+              Delete subpop (operator)
+            </button>
+          )}
+        </div>
+        <p className="meta" style={{ margin: "0.35rem 0 0" }}>
+          {subpopLabel(slug)}
+        </p>
+        {hub?.description ? (
+          <p style={{ margin: "0.75rem 0 0", color: "#444", lineHeight: 1.5, maxWidth: "42rem" }}>
+            {hub.description}
+          </p>
+        ) : null}
+      </header>
 
       {authed && <VerifyBanner verified={verified} />}
 
       {authed && verified ? (
         <form className="card" onSubmit={submitPost}>
-          <h3 style={{ marginTop: 0 }}>New post</h3>
+          <h3 style={{ marginTop: 0 }}>New fractalpop</h3>
           <input
             className="input"
             placeholder="Title"
@@ -112,7 +128,7 @@ export default function SubpopPage() {
             onChange={(e) => setBody(e.target.value)}
           />
           <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
-            Publish post
+            Publish fractalpop
           </button>
         </form>
       ) : !authed ? (
@@ -123,6 +139,12 @@ export default function SubpopPage() {
       ) : null}
 
       {error && <p style={{ color: "#b00020" }}>{error}</p>}
+
+      <h2 style={{ fontSize: "1.1rem", marginTop: "1.25rem" }}>Fractalpops</h2>
+
+      {posts.length === 0 && (
+        <p className="meta">No fractalpops yet.</p>
+      )}
 
       {posts.map((post) => (
         <Link key={post.id} href={`/p/${post.id}`} className="card" style={{ display: "block" }}>

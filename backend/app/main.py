@@ -152,11 +152,19 @@ def create_hub(payload: HubCreate, db: Session = Depends(get_db), user: User = D
     return hub
 
 
+@app.get("/hubs/{slug}", response_model=HubPublic)
+def get_hub(slug: str, db: Session = Depends(get_db)):
+    hub = db.query(Hub).filter(Hub.slug == slug).first()
+    if not hub:
+        raise HTTPException(status_code=404, detail="Subpop not found")
+    return hub
+
+
 @app.get("/hubs/{slug}/posts", response_model=list[PostPublic])
 def list_hub_posts(slug: str, db: Session = Depends(get_db)):
     hub = db.query(Hub).filter(Hub.slug == slug).first()
     if not hub:
-        raise HTTPException(status_code=404, detail="Hub not found")
+        raise HTTPException(status_code=404, detail="Subpop not found")
     rows = (
         db.query(Post, User.handle, func.count(Comment.id))
         .join(User, Post.author_id == User.id)
