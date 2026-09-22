@@ -28,7 +28,7 @@ export default function HubsPage() {
 
   const loadHubs = () => {
     api("/hubs")
-      .then(setHubs)
+      .then((data) => setHubs(Array.isArray(data) ? data : []))
       .catch((e) => setError(e.message));
   };
 

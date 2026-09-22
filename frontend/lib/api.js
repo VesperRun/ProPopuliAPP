@@ -30,8 +30,12 @@ export async function api(path, options = {}) {
   try {
     res = await fetch(`${apiBase()}${path}`, { ...options, headers });
   } catch {
+    const onRender =
+      typeof window !== "undefined" && window.location.hostname.includes("onrender.com");
     throw new Error(
-      "Cannot reach API. Start the backend (terminal 1): cd backend → venv → uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
+      onRender
+        ? "Cannot reach API. On Render: set NEXT_PUBLIC_API_URL to your propopuli-api URL, set CORS_ORIGINS on the API to this site, then redeploy the web service (clear build cache)."
+        : "Cannot reach API. Start the backend (terminal 1): cd backend → venv → uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
     );
   }
   const text = await res.text();
