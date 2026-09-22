@@ -11,3 +11,6 @@ node_modules/
 out/
 .DS_Store
 *.log
+
+# Local-only runbooks (not for git)
+local/

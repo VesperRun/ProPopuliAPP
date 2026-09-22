@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AuthWall from "./AuthWall";
 import Nav from "./Nav";
+import GateChallenge from "./GateChallenge";
 import VerifyBanner from "./VerifyBanner";
 import { authHref } from "../lib/auth";
 import { CONTENT_POLICY_MESSAGE, contentPolicyViolation } from "../lib/contentPolicy";
@@ -19,6 +20,7 @@ export default function SubpopPage() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
+  const [gate, setGate] = useState(null);
   const [authed, setAuthed] = useState(false);
   const [verified, setVerified] = useState(true);
   const [isOperator, setIsOperator] = useState(false);
@@ -64,6 +66,7 @@ export default function SubpopPage() {
       return;
     }
     setError("");
+    setGate(null);
     if (contentPolicyViolation(title, body)) {
       setError(CONTENT_POLICY_MESSAGE);
       return;
@@ -77,7 +80,12 @@ export default function SubpopPage() {
       setBody("");
       router.push(`/p/${post.id}`);
     } catch (err) {
-      setError(err.message);
+      if (err.status === 422 && err.payload?.detail) {
+        const d = err.payload.detail;
+        setGate(typeof d === "object" ? d : { detail: String(d) });
+      } else {
+        setError(err.message);
+      }
     }
   }
 
@@ -112,10 +120,10 @@ export default function SubpopPage() {
 
       {authed && verified ? (
         <form className="card" onSubmit={submitPost}>
-          <h3 style={{ marginTop: 0 }}>New fractalpop</h3>
+          <h3 style={{ marginTop: 0 }}>New fractalpop (Gate enforced)</h3>
           <input
             className="input"
-            placeholder="Title"
+            placeholder="Concrete topic or invitation"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
@@ -127,6 +135,7 @@ export default function SubpopPage() {
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
+          <GateChallenge gate={gate} />
           <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
             Publish fractalpop
           </button>

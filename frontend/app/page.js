@@ -20,6 +20,14 @@ export default function Home() {
             Browse subpops
           </Link>
         </div>
+        {process.env.NODE_ENV === "development" && (
+          <p className="meta" style={{ marginTop: "1rem", marginBottom: 0 }}>
+            Local dev:{" "}
+            <a href="http://localhost:3000" rel="noopener noreferrer">
+              http://localhost:3000
+            </a>
+          </p>
+        )}
       </section>
     </main>
   );

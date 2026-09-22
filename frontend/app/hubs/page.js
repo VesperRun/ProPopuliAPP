@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Nav from "../../components/Nav";
+import GateChallenge from "../../components/GateChallenge";
 import VerifyBanner from "../../components/VerifyBanner";
 import { authHref } from "../../lib/auth";
 import { api, getToken } from "../../lib/api";
@@ -23,6 +24,7 @@ export default function HubsPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [creating, setCreating] = useState(false);
+  const [gate, setGate] = useState(null);
 
   const loadHubs = () => {
     api("/hubs")
@@ -58,6 +60,7 @@ export default function HubsPage() {
     }
     setCreating(true);
     setError("");
+    setGate(null);
     try {
       const hub = await api("/hubs", {
         method: "POST",
@@ -69,7 +72,12 @@ export default function HubsPage() {
       });
       router.push(subpopPath(hub.slug));
     } catch (err) {
-      setError(err.message);
+      if (err.status === 422 && err.payload?.detail) {
+        const d = err.payload.detail;
+        setGate(typeof d === "object" ? d : { detail: String(d) });
+      } else {
+        setError(err.message);
+      }
       setCreating(false);
     }
   }
@@ -128,6 +136,7 @@ export default function HubsPage() {
                 onChange={(e) => setDescription(e.target.value)}
                 maxLength={512}
               />
+              <GateChallenge gate={gate} />
               <div style={{ marginTop: "0.75rem", display: "flex", gap: "0.5rem" }}>
                 <button className="btn" type="submit" disabled={creating}>
                   {creating ? "Creating…" : "Create"}

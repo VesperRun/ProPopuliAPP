@@ -14,7 +14,7 @@ from app.mailer import send_verification_email
 from app.migrate import run_migrations
 from app.verification import issue_verification_token, verify_token
 from app.database import Base, engine, get_db
-from app.gate import evaluate_reply
+from app.gate import evaluate_opening_post, evaluate_reply
 from app.models import Comment, Hub, Post, User
 from app.schemas import (
     CommentCreate,
@@ -144,8 +144,18 @@ def list_hubs(db: Session = Depends(get_db)):
 
 
 @app.post("/hubs", response_model=HubPublic, status_code=status.HTTP_201_CREATED)
-def create_hub(payload: HubCreate, db: Session = Depends(get_db), user: User = Depends(require_verified_user)):
+async def create_hub(payload: HubCreate, db: Session = Depends(get_db), user: User = Depends(require_verified_user)):
     assert_content_policy(payload.slug, payload.name, payload.description)
+    gate = await evaluate_opening_post(payload.name, payload.description)
+    if not gate.passed:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=GateFailure(
+                detail="Reframing Gate: recast subpop name/description before you publish.",
+                reasons=gate.reasons,
+                challenge=gate.challenge or "Recast as a clear niche invitation, not bait or hollow positivity.",
+            ).model_dump(),
+        )
     if db.query(Hub).filter(Hub.slug == payload.slug).first():
         raise HTTPException(status_code=400, detail="Hub slug already exists")
     hub = Hub(
@@ -197,7 +207,7 @@ def list_hub_posts(slug: str, db: Session = Depends(get_db)):
 
 
 @app.post("/hubs/{slug}/posts", response_model=PostPublic, status_code=status.HTTP_201_CREATED)
-def create_post(
+async def create_post(
     slug: str,
     payload: PostCreate,
     db: Session = Depends(get_db),
@@ -207,6 +217,16 @@ def create_post(
     if not hub:
         raise HTTPException(status_code=404, detail="Hub not found")
     assert_content_policy(payload.title, payload.body)
+    gate = await evaluate_opening_post(payload.title, payload.body)
+    if not gate.passed:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=GateFailure(
+                detail="Reframing Gate: recast this fractalpop before you publish.",
+                reasons=gate.reasons,
+                challenge=gate.challenge or "Recast as a concrete topic or invitation.",
+            ).model_dump(),
+        )
     post = Post(hub_id=hub.id, author_id=user.id, title=payload.title, body=payload.body)
     db.add(post)
     db.commit()
