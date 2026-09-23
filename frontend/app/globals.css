@@ -103,6 +103,17 @@ a.btn:hover {
   resize: vertical;
 }
 
+.login-forgot {
+  margin-top: 0.5rem;
+  text-align: right;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.login-forgot a {
+  font-weight: 600;
+}
+
 .password-field {
   position: relative;
   margin-top: 0.5rem;

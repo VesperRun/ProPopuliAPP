@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
     <main className="container">
       <Nav />
       <form className="card" onSubmit={onSubmit} style={{ maxWidth: 420 }}>
-        <h2 style={{ marginTop: 0 }}>Forgot password</h2>
+        <h2 style={{ marginTop: 0 }}>Forgot your password?</h2>
         <p className="meta" style={{ lineHeight: 1.5 }}>
           Enter your account email. We will send a link to choose a new password.
         </p>

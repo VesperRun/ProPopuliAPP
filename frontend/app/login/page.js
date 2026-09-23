@@ -50,9 +50,9 @@ function LoginForm() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
-      <p style={{ marginTop: "0.35rem", marginBottom: 0, textAlign: "right" }}>
-        <Link href="/forgot-password">Forgot password?</Link>
-      </p>
+      <div className="login-forgot">
+        <Link href="/forgot-password">Forgot your password?</Link>
+      </div>
       {error && <p style={{ color: "#b00020", marginTop: "0.5rem" }}>{error}</p>}
       <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
         Log in
