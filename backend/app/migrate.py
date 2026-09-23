@@ -16,6 +16,10 @@ def run_migrations() -> None:
         alters.append("ALTER TABLE users ADD COLUMN verification_token VARCHAR(128)")
     if "verification_expires_at" not in cols:
         alters.append("ALTER TABLE users ADD COLUMN verification_expires_at DATETIME")
+    if "password_reset_token" not in cols:
+        alters.append("ALTER TABLE users ADD COLUMN password_reset_token VARCHAR(128)")
+    if "password_reset_expires_at" not in cols:
+        alters.append("ALTER TABLE users ADD COLUMN password_reset_expires_at DATETIME")
 
     hub_alters: list[str] = []
     if "hubs" in insp.get_table_names():

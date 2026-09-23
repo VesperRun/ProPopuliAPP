@@ -19,6 +19,8 @@ class User(Base):
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     verification_token: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
     verification_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    password_reset_token: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
+    password_reset_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     banned_permanent: Mapped[bool] = mapped_column(Boolean, default=False)
     timeout_until: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     moderation_note: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)

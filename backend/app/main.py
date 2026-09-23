@@ -10,7 +10,8 @@ from app.operator_privilege import is_operator_user, require_operator
 from app.config import settings
 from app.content_policy import assert_content_policy
 from app.email_util import normalize_email
-from app.mailer import send_verification_email
+from app.mailer import send_password_reset_email, send_verification_email
+from app.password_reset import consume_password_reset_token, issue_password_reset_token
 from app.migrate import run_migrations
 from app.verification import issue_verification_token, verify_token
 from app.database import Base, engine, get_db
@@ -20,6 +21,7 @@ from app.schemas import (
     CommentCreate,
     CommentPublic,
     ContactPublic,
+    ForgotPasswordRequest,
     GateFailure,
     HubCreate,
     HubPublic,
@@ -29,6 +31,7 @@ from app.schemas import (
     MessageResponse,
     ModerationRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     TokenResponse,
     UserPublic,
     VerifyEmailRequest,
@@ -68,10 +71,10 @@ def public_contact():
     return ContactPublic(admin_email=email or None)
 
 
-def _send_verify(user: User) -> None:
+def _send_verify(user: User) -> bool:
     token = issue_verification_token(user)
     verify_url = f"{settings.app_public_url.rstrip('/')}/verify-email?token={token}"
-    send_verification_email(user.email, verify_url)
+    return send_verification_email(user.email, verify_url)
 
 
 @app.post("/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -117,9 +120,47 @@ def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)):
 def resend_verification(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     if user.email_verified:
         return MessageResponse(message="Email already verified.")
-    _send_verify(user)
+    if not _send_verify(user):
+        db.commit()
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Could not send email. With Resend's test domain, delivery may only work to "
+                "the address verified in Resend until you add your own domain."
+            ),
+        )
     db.commit()
     return MessageResponse(message="Verification email sent.")
+
+
+FORGOT_PASSWORD_MESSAGE = (
+    "If an account exists for that email, we sent a reset link. "
+    "Check your inbox (and spam). Links expire in 2 hours."
+)
+
+
+@app.post("/auth/forgot-password", response_model=MessageResponse)
+def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    email = normalize_email(str(payload.email))
+    user = db.query(User).filter(User.email == email).first()
+    if user and not user.banned_permanent:
+        token = issue_password_reset_token(user)
+        reset_url = f"{settings.app_public_url.rstrip('/')}/reset-password?token={token}"
+        send_password_reset_email(user.email, reset_url)
+        db.commit()
+    return MessageResponse(message=FORGOT_PASSWORD_MESSAGE)
+
+
+@app.post("/auth/reset-password", response_model=MessageResponse)
+def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
+    user = consume_password_reset_token(db, payload.token)
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+    if user.banned_permanent:
+        raise HTTPException(status_code=403, detail="Account barred by the operator.")
+    user.password_hash = hash_password(payload.password)
+    db.commit()
+    return MessageResponse(message="Password updated. You can log in with the new password.")
 
 
 def _user_public(user: User) -> UserPublic:

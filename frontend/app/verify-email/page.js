@@ -35,7 +35,9 @@ function VerifyContent() {
       {!token && (
         <>
           <p style={{ color: "#444" }}>
-            Open the link we sent to your inbox. If Resend is not configured, check the backend terminal for a dev link.
+            Open the link we sent to your inbox. On production with Resend&apos;s test sender, mail may only reach the
+            inbox verified in Resend until you add your own domain — use that inbox or check Resend&apos;s dashboard
+            for delivery errors.
           </p>
           <Link href="/hubs">Back to hubs</Link>
         </>
