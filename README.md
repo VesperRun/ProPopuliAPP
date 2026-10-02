@@ -59,6 +59,7 @@ npm run dev
 
 ## Structure
 
-- `backend/` — FastAPI, SQLite, JWT auth, Gate on `POST /posts/{id}/comments`
+- `backend/` — FastAPI, SQLite/Postgres, JWT auth, Reframing Gate on subpops, opening posts, and replies
 - `frontend/` — Next.js 14, light UI
 - `docs/hierarchy.md` — **sample ⊂ branch ⊂ fractalpop ⊂ subpop ⊂ pop**
+- `docs/acceptable-use-policy.md` — AUP (conduct, media, promotion, enforcement)

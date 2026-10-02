@@ -21,7 +21,7 @@ sample  ⊂  branch  ⊂  fractalpop  ⊂  subpop  ⊂  pop
 
 ## Gate
 
-The **Reframing Gate** runs on reply **samples** (`POST /posts/{id}/comments`), not on the opening post of a fractalpop.
+The **Reframing Gate** runs on new **subpop** name/description, opening **post** samples, and reply **samples** (`Comment` bodies). See [acceptable-use-policy.md](./acceptable-use-policy.md).
 
 ## Sovereignty
 
