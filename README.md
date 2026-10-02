@@ -63,3 +63,4 @@ npm run dev
 - `frontend/` — Next.js 14, light UI
 - `docs/hierarchy.md` — **sample ⊂ branch ⊂ fractalpop ⊂ subpop ⊂ pop**
 - `docs/acceptable-use-policy.md` — AUP (conduct, media, promotion, enforcement)
+- `docs/remediation-plan.md` — hosting, policy UX, reports, moderation (fragility close-out)
