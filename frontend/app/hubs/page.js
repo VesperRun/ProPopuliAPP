@@ -8,7 +8,14 @@ import GateChallenge from "../../components/GateChallenge";
 import VerifyBanner from "../../components/VerifyBanner";
 import { authHref } from "../../lib/auth";
 import { api, getToken } from "../../lib/api";
-import { CONTENT_POLICY_MESSAGE, contentPolicyViolation } from "../../lib/contentPolicy";
+import {
+  CONTENT_POLICY_MESSAGE,
+  CORRIDOR_HUB_SLUGS,
+  HUB_POLICY_MESSAGE,
+  PLATFORM_HUB_SLUGS,
+  contentPolicyViolation,
+  hubPolicyViolation,
+} from "../../lib/contentPolicy";
 import { normalizeSubpopSlug, subpopLabel, subpopPath } from "../../lib/subpop";
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/;
@@ -54,6 +61,10 @@ export default function HubsPage() {
       setError(CONTENT_POLICY_MESSAGE);
       return;
     }
+    if (hubPolicyViolation(normalized, name, description)) {
+      setError(HUB_POLICY_MESSAGE);
+      return;
+    }
     if (!SLUG_PATTERN.test(normalized)) {
       setError("Use the name only (e.g. intro → s\\intro). Letters, numbers, hyphens, 2–32 chars.");
       return;
@@ -82,12 +93,31 @@ export default function HubsPage() {
     }
   }
 
+  const platformHubs = hubs.filter((h) => PLATFORM_HUB_SLUGS.has(h.slug));
+  const corridorHubs = hubs.filter((h) => CORRIDOR_HUB_SLUGS.has(h.slug));
+  const otherHubs = hubs.filter(
+    (h) => !PLATFORM_HUB_SLUGS.has(h.slug) && !CORRIDOR_HUB_SLUGS.has(h.slug)
+  );
+
+  function HubCards({ list }) {
+    return list.map((hub) => (
+      <Link key={hub.id} href={subpopPath(hub.slug)} className="card" style={{ display: "block" }}>
+        <strong>{subpopLabel(hub.slug)}</strong>
+        <div>{hub.name}</div>
+        <p className="meta" style={{ marginBottom: 0 }}>
+          {hub.description}
+        </p>
+      </Link>
+    ));
+  }
+
   return (
     <main className="container">
       <Nav />
       <h2>Subpops</h2>
       <p className="meta" style={{ marginTop: "-0.5rem" }}>
-        Niche communities — symbolically <strong>s\name</strong>.
+        Pick a subpop to start a thread — you don&apos;t need to create one. Symbolically{" "}
+        <strong>s\name</strong>.
       </p>
 
       {authed && <VerifyBanner verified={verified} />}
@@ -163,15 +193,24 @@ export default function HubsPage() {
 
       {error && <p style={{ color: "#b00020" }}>{error}</p>}
 
-      {hubs.map((hub) => (
-        <Link key={hub.id} href={subpopPath(hub.slug)} className="card" style={{ display: "block" }}>
-          <strong>{subpopLabel(hub.slug)}</strong>
-          <div>{hub.name}</div>
-          <p className="meta" style={{ marginBottom: 0 }}>
-            {hub.description}
-          </p>
-        </Link>
-      ))}
+      {platformHubs.length > 0 && (
+        <>
+          <h3 style={{ marginBottom: "0.5rem" }}>Platform</h3>
+          <HubCards list={platformHubs} />
+        </>
+      )}
+      {corridorHubs.length > 0 && (
+        <>
+          <h3 style={{ marginBottom: "0.5rem", marginTop: "1.25rem" }}>Austin &amp; San Antonio</h3>
+          <HubCards list={corridorHubs} />
+        </>
+      )}
+      {otherHubs.length > 0 && (
+        <>
+          <h3 style={{ marginBottom: "0.5rem", marginTop: "1.25rem" }}>Community-created</h3>
+          <HubCards list={otherHubs} />
+        </>
+      )}
     </main>
   );
 }

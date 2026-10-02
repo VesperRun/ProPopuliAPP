@@ -8,7 +8,7 @@ from app.auth_deps import require_verified_user
 from app.moderation import apply_moderation, delete_subpop_cascade
 from app.operator_privilege import is_operator_user, require_operator
 from app.config import settings
-from app.content_policy import assert_content_policy
+from app.content_policy import assert_content_policy, assert_hub_policy
 from app.email_util import normalize_email
 from app.mailer import send_password_reset_email, send_verification_email
 from app.password_reset import consume_password_reset_token, issue_password_reset_token
@@ -16,7 +16,13 @@ from app.migrate import run_migrations
 from app.verification import issue_verification_token, verify_token
 from app.database import Base, engine, get_db
 from app.gate import evaluate_opening_post, evaluate_reply
-from app.models import Comment, Hub, Post, User
+from app.models import Comment, Hub, Post, Report, User
+from app.reports import (
+    file_content_report,
+    file_platform_feedback,
+    report_to_public,
+    resolve_report,
+)
 from app.schemas import (
     CommentCreate,
     CommentPublic,
@@ -31,6 +37,10 @@ from app.schemas import (
     MessageResponse,
     ModerationRequest,
     RegisterRequest,
+    ReportCreate,
+    ReportPublic,
+    ReportResolveRequest,
+    FeedbackCreate,
     ResetPasswordRequest,
     TokenResponse,
     UserPublic,
@@ -186,7 +196,7 @@ def list_hubs(db: Session = Depends(get_db)):
 
 @app.post("/hubs", response_model=HubPublic, status_code=status.HTTP_201_CREATED)
 async def create_hub(payload: HubCreate, db: Session = Depends(get_db), user: User = Depends(require_verified_user)):
-    assert_content_policy(payload.slug, payload.name, payload.description)
+    assert_hub_policy(payload.slug, payload.name, payload.description)
     gate = await evaluate_opening_post(payload.name, payload.description)
     if not gate.passed:
         raise HTTPException(
@@ -376,6 +386,98 @@ async def create_comment(
         author_handle=user.handle,
         created_at=comment.created_at,
     )
+
+
+@app.post("/feedback", response_model=ReportPublic, status_code=status.HTTP_201_CREATED)
+async def submit_feedback(
+    payload: FeedbackCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_verified_user),
+):
+    report = await file_platform_feedback(
+        db,
+        user,
+        category=payload.category,
+        body=payload.body,
+    )
+    return report_to_public(db, report, include_reporter=True)
+
+
+@app.post("/posts/{post_id}/report", response_model=ReportPublic, status_code=status.HTTP_201_CREATED)
+async def report_post(
+    post_id: int,
+    payload: ReportCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_verified_user),
+):
+    assert_content_policy(payload.details)
+    report = await file_content_report(
+        db,
+        user,
+        kind="content_post",
+        post_id=post_id,
+        comment_id=None,
+        category=payload.category,
+        details=payload.details,
+    )
+    return report_to_public(db, report, include_reporter=True)
+
+
+@app.post("/comments/{comment_id}/report", response_model=ReportPublic, status_code=status.HTTP_201_CREATED)
+async def report_comment(
+    comment_id: int,
+    payload: ReportCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_verified_user),
+):
+    comment = db.get(Comment, comment_id)
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    assert_content_policy(payload.details)
+    report = await file_content_report(
+        db,
+        user,
+        kind="content_comment",
+        post_id=comment.post_id,
+        comment_id=comment_id,
+        category=payload.category,
+        details=payload.details,
+    )
+    return report_to_public(db, report, include_reporter=True)
+
+
+@app.get("/operator/reports", response_model=list[ReportPublic])
+def operator_list_reports(
+    status_filter: str = "open",
+    db: Session = Depends(get_db),
+    _operator: User = Depends(require_operator),
+):
+    q = db.query(Report).order_by(Report.created_at.desc())
+    if status_filter != "all":
+        q = q.filter(Report.status == status_filter)
+    reports = q.limit(200).all()
+    severity_rank = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    reports.sort(
+        key=lambda r: (
+            severity_rank.get(r.ai_severity or "medium", 2),
+            r.created_at,
+        )
+    )
+    return [report_to_public(db, r, include_reporter=True) for r in reports]
+
+
+@app.patch("/operator/reports/{report_id}", response_model=ReportPublic)
+def operator_resolve_report(
+    report_id: int,
+    payload: ReportResolveRequest,
+    db: Session = Depends(get_db),
+    operator: User = Depends(require_operator),
+):
+    report = db.get(Report, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    resolve_report(db, report, operator, status=payload.status, note=payload.note)
+    return report_to_public(db, report, include_reporter=True)
 
 
 @app.delete("/operator/subpops/{slug}", response_model=MessageResponse)
