@@ -63,4 +63,20 @@ export const CORRIDOR_HUB_SLUGS = new Set([
   "austin-stages",
 ]);
 
-export const PLATFORM_HUB_SLUGS = new Set(["general", "build"]);
+export const PLATFORM_HUB_SLUGS = new Set([
+  "general",
+  "build",
+  "welcome",
+  "norms",
+  "gate-notes",
+  "steelman",
+  "drafts",
+  "questions",
+  "ship-log",
+  "debug",
+  "propopuli",
+  "civic",
+  "local-tools",
+  "reading",
+  "off-topic",
+]);
