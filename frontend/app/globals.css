@@ -169,3 +169,60 @@ a.btn:hover {
   border-left: 2px solid #eee;
   padding-left: 0.75rem;
 }
+
+.subpop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: 0.35rem 0.45rem;
+  margin-bottom: 0.25rem;
+}
+
+.subpop-tile {
+  display: block;
+  background: #fff;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  padding: 0.4rem 0.5rem;
+  line-height: 1.2;
+  color: inherit;
+}
+
+.subpop-tile:hover {
+  border-color: #0a58ca;
+  background: #f6faff;
+  text-decoration: none;
+}
+
+.subpop-tile__slug {
+  display: block;
+  font-weight: 700;
+  font-size: 0.82rem;
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+  color: #0a58ca;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subpop-tile__name {
+  display: block;
+  margin-top: 0.12rem;
+  font-size: 0.72rem;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hubs-section-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #444;
+}
+
+.hubs-section-title + .hubs-section-title,
+.hubs-section-title:not(:first-of-type) {
+  margin-top: 1rem;
+}

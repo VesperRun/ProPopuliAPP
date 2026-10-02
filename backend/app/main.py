@@ -16,6 +16,8 @@ from app.migrate import run_migrations
 from app.verification import issue_verification_token, verify_token
 from app.database import Base, engine, get_db
 from app.gate import evaluate_opening_post, evaluate_reply
+from app.hub_public import hub_to_public
+from app.hub_stats import participant_count_for_hub, participant_counts_for_hubs
 from app.models import Comment, Hub, Post, Report, User
 from app.reports import (
     file_content_report,
@@ -191,7 +193,9 @@ def me(user: User = Depends(get_current_user)):
 
 @app.get("/hubs", response_model=list[HubPublic])
 def list_hubs(db: Session = Depends(get_db)):
-    return db.query(Hub).order_by(Hub.name).all()
+    hubs = db.query(Hub).all()
+    counts = participant_counts_for_hubs(db)
+    return [hub_to_public(h, participant_count=counts.get(h.id, 0)) for h in hubs]
 
 
 @app.post("/hubs", response_model=HubPublic, status_code=status.HTTP_201_CREATED)
@@ -218,7 +222,7 @@ async def create_hub(payload: HubCreate, db: Session = Depends(get_db), user: Us
     db.add(hub)
     db.commit()
     db.refresh(hub)
-    return hub
+    return hub_to_public(hub, participant_count=participant_count_for_hub(db, hub.id))
 
 
 @app.get("/hubs/{slug}", response_model=HubPublic)
@@ -226,7 +230,7 @@ def get_hub(slug: str, db: Session = Depends(get_db)):
     hub = db.query(Hub).filter(Hub.slug == slug).first()
     if not hub:
         raise HTTPException(status_code=404, detail="Subpop not found")
-    return hub
+    return hub_to_public(hub, participant_count=participant_count_for_hub(db, hub.id))
 
 
 @app.get("/hubs/{slug}/posts", response_model=list[PostPublic])

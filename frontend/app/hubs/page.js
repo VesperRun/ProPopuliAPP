@@ -16,7 +16,7 @@ import {
   contentPolicyViolation,
   hubPolicyViolation,
 } from "../../lib/contentPolicy";
-import { normalizeSubpopSlug, subpopLabel, subpopPath } from "../../lib/subpop";
+import { normalizeSubpopSlug, sortHubsForDisplay, subpopLabel, subpopPath } from "../../lib/subpop";
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/;
 
@@ -93,22 +93,29 @@ export default function HubsPage() {
     }
   }
 
-  const platformHubs = hubs.filter((h) => PLATFORM_HUB_SLUGS.has(h.slug));
-  const corridorHubs = hubs.filter((h) => CORRIDOR_HUB_SLUGS.has(h.slug));
-  const otherHubs = hubs.filter(
-    (h) => !PLATFORM_HUB_SLUGS.has(h.slug) && !CORRIDOR_HUB_SLUGS.has(h.slug)
+  const platformHubs = sortHubsForDisplay(hubs.filter((h) => PLATFORM_HUB_SLUGS.has(h.slug)));
+  const corridorHubs = sortHubsForDisplay(hubs.filter((h) => CORRIDOR_HUB_SLUGS.has(h.slug)));
+  const otherHubs = sortHubsForDisplay(
+    hubs.filter((h) => !PLATFORM_HUB_SLUGS.has(h.slug) && !CORRIDOR_HUB_SLUGS.has(h.slug))
   );
 
-  function HubCards({ list }) {
-    return list.map((hub) => (
-      <Link key={hub.id} href={subpopPath(hub.slug)} className="card" style={{ display: "block" }}>
-        <strong>{subpopLabel(hub.slug)}</strong>
-        <div>{hub.name}</div>
-        <p className="meta" style={{ marginBottom: 0 }}>
-          {hub.description}
-        </p>
-      </Link>
-    ));
+  function HubGrid({ list }) {
+    return (
+      <div className="subpop-grid" role="list">
+        {list.map((hub) => (
+          <Link
+            key={hub.id}
+            href={subpopPath(hub.slug)}
+            className="subpop-tile"
+            role="listitem"
+            title={hub.description?.trim() || hub.name}
+          >
+            <span className="subpop-tile__slug">{subpopLabel(hub.slug)}</span>
+            {hub.name !== hub.slug && <span className="subpop-tile__name">{hub.name}</span>}
+          </Link>
+        ))}
+      </div>
+    );
   }
 
   return (
@@ -195,20 +202,20 @@ export default function HubsPage() {
 
       {platformHubs.length > 0 && (
         <>
-          <h3 style={{ marginBottom: "0.5rem" }}>Platform</h3>
-          <HubCards list={platformHubs} />
+          <h3 className="hubs-section-title">Platform</h3>
+          <HubGrid list={platformHubs} />
         </>
       )}
       {corridorHubs.length > 0 && (
         <>
-          <h3 style={{ marginBottom: "0.5rem", marginTop: "1.25rem" }}>Austin &amp; San Antonio</h3>
-          <HubCards list={corridorHubs} />
+          <h3 className="hubs-section-title">Austin &amp; San Antonio</h3>
+          <HubGrid list={corridorHubs} />
         </>
       )}
       {otherHubs.length > 0 && (
         <>
-          <h3 style={{ marginBottom: "0.5rem", marginTop: "1.25rem" }}>Community-created</h3>
-          <HubCards list={otherHubs} />
+          <h3 className="hubs-section-title">Community-created</h3>
+          <HubGrid list={otherHubs} />
         </>
       )}
     </main>

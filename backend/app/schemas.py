@@ -70,6 +70,10 @@ class HubPublic(BaseModel):
     slug: str
     name: str
     description: str
+    participant_count: int = Field(
+        default=0,
+        description="Distinct users who posted or commented in this subpop.",
+    )
 
     class Config:
         from_attributes = True
