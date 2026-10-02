@@ -114,3 +114,50 @@ class GateFailure(BaseModel):
     detail: str
     reasons: list[str]
     challenge: str
+
+
+ReportCategory = Literal[
+    "spam",
+    "harassment",
+    "illegal",
+    "sexual_content",
+    "misinformation",
+    "other",
+]
+
+
+class ReportCreate(BaseModel):
+    category: ReportCategory
+    details: str = Field(default="", max_length=2000)
+
+
+class FeedbackCreate(BaseModel):
+    body: str = Field(min_length=10, max_length=4000)
+    category: ReportCategory = "other"
+
+
+class ReportPublic(BaseModel):
+    id: int
+    kind: str
+    category: str
+    details: str
+    status: str
+    post_id: int | None
+    comment_id: int | None
+    hub_slug: str | None = None
+    post_title: str | None = None
+    content_excerpt: str | None = None
+    target_author_handle: str | None = None
+    reporter_handle: str | None = None
+    ai_severity: str | None = None
+    ai_summary: str | None = None
+    ai_recommended_action: str | None = None
+    ai_tags: list[str] = []
+    created_at: datetime
+    resolved_at: datetime | None = None
+    resolution_note: str | None = None
+
+
+class ReportResolveRequest(BaseModel):
+    status: Literal["resolved", "dismissed"]
+    note: str = Field(default="", max_length=512)

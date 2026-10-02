@@ -28,6 +28,10 @@ class User(Base):
 
     posts: Mapped[list["Post"]] = relationship(back_populates="author")
     comments: Mapped[list["Comment"]] = relationship(back_populates="author")
+    reports_filed: Mapped[list["Report"]] = relationship(
+        back_populates="reporter",
+        foreign_keys="Report.reporter_id",
+    )
 
 
 class Hub(Base):
@@ -69,3 +73,26 @@ class Comment(Base):
 
     post: Mapped["Post"] = relationship(back_populates="comments")
     author: Mapped["User"] = relationship(back_populates="comments")
+
+
+class Report(Base):
+    __tablename__ = "reports"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    reporter_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(32), index=True)
+    post_id: Mapped[Optional[int]] = mapped_column(ForeignKey("posts.id"), nullable=True, index=True)
+    comment_id: Mapped[Optional[int]] = mapped_column(ForeignKey("comments.id"), nullable=True, index=True)
+    category: Mapped[str] = mapped_column(String(32))
+    details: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(16), default="open", index=True)
+    ai_severity: Mapped[Optional[str]] = mapped_column(String(16), nullable=True, index=True)
+    ai_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    ai_recommended_action: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    ai_tags: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    resolver_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    resolution_note: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+
+    reporter: Mapped["User"] = relationship(back_populates="reports_filed", foreign_keys=[reporter_id])
