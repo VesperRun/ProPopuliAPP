@@ -131,7 +131,7 @@ async def _openai_triage(user_content: str) -> TriageResult | None:
         content = data["choices"][0]["message"]["content"]
         parsed = json.loads(content)
         severity = str(parsed.get("severity", "medium")).lower()
-        if severity not ("low", "medium", "high", "critical"):
+        if severity not in ("low", "medium", "high", "critical"):
             severity = "medium"
         tags = [str(t) for t in parsed.get("tags", [])][:12]
         return TriageResult(

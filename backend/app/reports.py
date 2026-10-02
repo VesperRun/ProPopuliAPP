@@ -214,7 +214,7 @@ def resolve_report(
 ) -> Report:
     if report.status != "open":
         raise HTTPException(status_code=400, detail="Report is already closed.")
-    if status not ("resolved", "dismissed"):
+    if status not in ("resolved", "dismissed"):
         raise HTTPException(status_code=400, detail="status must be resolved or dismissed.")
     report.status = status
     report.resolved_at = datetime.utcnow()
